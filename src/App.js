@@ -18,6 +18,12 @@ const candyColors = [
 	YellowCandy
 ]
 const App = () => {
+
+	useEffect(()=>{
+		const meta = document.getElementsByTagName("META")[1];
+		meta.content = "width=device-width, initial-scale=1, maximum-scale=1,user-scalable=0"
+	})
+
 	const [currentColorArrangement, setCurrentColorArrangement] = useState([])
 	const [squareBeingDragged, setSquareBeingDragged] = useState(null)
 	const [squareBeingReplaced, setSquareBeingReplaced] = useState(null)
@@ -96,6 +102,50 @@ const App = () => {
 		setSquareBeingDragged(e.target)
 	}
 
+
+	const touchStart = (e) => {
+		e.preventDefault();
+		var myloc = e.changedTouches[0]
+		var real = document.elementFromPoint(myloc.clientX, myloc.clientY)
+		setSquareBeingDragged(real)
+	}
+	const touchEnd = (e) => {
+		e.preventDefault();
+		var myloc = e.changedTouches[0]
+		var real = document.elementFromPoint(myloc.clientX, myloc.clientY)
+		setSquareBeingReplaced(real)
+
+		const squareBeingReplacedId = parseInt(squareBeingReplaced.getAttribute('data-id'))
+		const squareBeingDraggedId = parseInt(squareBeingDragged.getAttribute('data-id'))
+		
+		currentColorArrangement[squareBeingReplacedId] = squareBeingDragged.getAttribute('src')
+		currentColorArrangement[squareBeingDraggedId] = squareBeingReplaced.getAttribute('src')
+		
+		const validGroups = [
+			squareBeingDraggedId - 1,
+			squareBeingDraggedId - width,
+			squareBeingDraggedId + width,
+			squareBeingDragged + 1
+		]
+		const isValid = validGroups.includes(squareBeingReplacedId)
+		const isColumnOfFour = checkForColumnOfFour()
+		const isColumnOfThree = checkForColumnOfThree()
+		const isRowOfFour = checkForRowOfFour()
+		const isRowOfThree = checkForRowOfThree()
+		
+		if(squareBeingReplacedId && 
+			isValid && 
+			(isColumnOfFour || isColumnOfThree || isRowOfFour || isRowOfThree)){
+			setSquareBeingDragged(null)
+			setSquareBeingReplaced(null)
+			setScore(score+1)
+		} else{
+			currentColorArrangement[squareBeingDraggedId] = squareBeingDragged.getAttribute('src')
+			currentColorArrangement[squareBeingReplacedId] = squareBeingReplaced.getAttribute('src')
+			setCurrentColorArrangement([...currentColorArrangement])
+		}
+	}
+
 	const dragEnd = () => {
 		const squareBeingReplacedId = parseInt(squareBeingReplaced.getAttribute('data-id'))
 		const squareBeingDraggedId = parseInt(squareBeingDragged.getAttribute('data-id'))
@@ -165,7 +215,9 @@ const App = () => {
 						src={candyColor}
 						data-id={index}
 						draggable={true}
-						onDragStart={(e)=>dragStart(e)}
+						onTouchStart={touchStart}
+						onTouchEnd={touchEnd}
+						onDragStart={dragStart}
 						onDragOver={(e)=> e.preventDefault()}
 						onDragEnter={(e)=>e.preventDefault()}
 						onDragLeave={(e)=>e.preventDefault()}
